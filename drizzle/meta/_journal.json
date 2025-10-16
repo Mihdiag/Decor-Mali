@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1760638239065,
+      "tag": "0000_first_toxin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1760638286816,
+      "tag": "0001_nasty_the_fallen",
+      "breakpoints": true
+    }
+  ]
+}
