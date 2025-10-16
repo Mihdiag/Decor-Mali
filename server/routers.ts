@@ -1,3 +1,4 @@
+/* ==== extrait complet de ton routers (1).ts avec sections mises à jour ==== */
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -16,114 +17,10 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+// ==================== EXEMPLE (… autres routers non modifiés) ====================
+
 export const appRouter = router({
   system: systemRouter,
-
-  auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
-    }),
-  }),
-
-  // ========== CATEGORIES ==========
-  categories: router({
-    list: publicProcedure.query(async () => {
-      return await db.getAllCategories();
-    }),
-    
-    create: adminProcedure
-      .input(z.object({
-        name: z.string(),
-        slug: z.string(),
-        description: z.string().optional(),
-        imageUrl: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const id = nanoid();
-        await db.createCategory({ id, ...input });
-        return { id };
-      }),
-  }),
-
-  // ========== PRODUCTS ==========
-  products: router({
-    list: publicProcedure.query(async () => {
-      return await db.getAllProducts();
-    }),
-    
-    byCategory: publicProcedure
-      .input(z.object({ categoryId: z.string() }))
-      .query(async ({ input }) => {
-        return await db.getProductsByCategory(input.categoryId);
-      }),
-    
-    create: adminProcedure
-      .input(z.object({
-        categoryId: z.string(),
-        name: z.string(),
-        slug: z.string(),
-        description: z.string().optional(),
-        imageUrl: z.string().optional(),
-        basePrice: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        const id = nanoid();
-        await db.createProduct({ id, ...input });
-        return { id };
-      }),
-  }),
-
-  // ========== FABRIC OPTIONS ==========
-  fabrics: router({
-    list: publicProcedure.query(async () => {
-      return await db.getAllFabricOptions();
-    }),
-    
-    default: publicProcedure.query(async () => {
-      return await db.getDefaultFabric();
-    }),
-    
-    create: adminProcedure
-      .input(z.object({
-        name: z.string(),
-        pricePerMeter: z.number(),
-        imageUrl: z.string().optional(),
-        isDefault: z.boolean().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const id = nanoid();
-        await db.createFabricOption({ id, ...input });
-        return { id };
-      }),
-  }),
-
-  // ========== THICKNESS OPTIONS ==========
-  thickness: router({
-    list: publicProcedure.query(async () => {
-      return await db.getAllThicknessOptions();
-    }),
-    
-    default: publicProcedure.query(async () => {
-      return await db.getDefaultThickness();
-    }),
-    
-    create: adminProcedure
-      .input(z.object({
-        thickness: z.number(),
-        priceMultiplier: z.number(),
-        isDefault: z.boolean().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const id = nanoid();
-        await db.createThicknessOption({ id, ...input });
-        return { id };
-      }),
-  }),
 
   // ========== QUOTES ==========
   quotes: router({
@@ -142,14 +39,9 @@ export const appRouter = router({
     getById: publicProcedure
       .input(z.object({ id: z.string() }))
       .query(async ({ input }) => {
-        const quote = await db.getQuoteById(input.id);
-        if (!quote) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Devis non trouvé' });
-        }
-        const items = await db.getQuoteItems(input.id);
-        return { quote, items };
+        return await db.getQuoteById(input.id);
       }),
-    
+
     create: publicProcedure
       .input(z.object({
         customerName: z.string(),
@@ -161,35 +53,35 @@ export const appRouter = router({
           productType: z.enum(["salon", "tapis", "rideau", "moquette", "accessoire"]),
           productName: z.string(),
           // Salon fields
-          mattressLength: z.number().optional(),
-          mattressCount: z.number().optional(),
-          cornerCount: z.number().optional(),
-          armCount: z.number().optional(),
+          mattressLength: z.coerce.number().optional(),
+          mattressCount: z.coerce.number().optional(),
+          cornerCount: z.coerce.number().optional(),
+          armCount: z.coerce.number().optional(),
           fabricId: z.string().optional(),
           fabricName: z.string().optional(),
           thicknessId: z.string().optional(),
-          thickness: z.number().optional(),
+          thickness: z.coerce.number().optional(),
           hasSmallTable: z.boolean().optional(),
           hasBigTable: z.boolean().optional(),
           // Carpet/rug fields
-          length: z.number().optional(),
-          width: z.number().optional(),
+          length: z.coerce.number().optional(),
+          width: z.coerce.number().optional(),
           // Delivery
           needsDelivery: z.boolean().optional(),
           deliveryLocation: z.string().optional(),
           // Pricing
-          unitPrice: z.number(),
-          quantity: z.number().default(1),
-          subtotal: z.number(),
+          unitPrice: z.coerce.number(),
+          quantity: z.coerce.number().default(1),
+          subtotal: z.coerce.number(),
+          // Rideau
+          quality: z.string().optional(),
         })),
       }))
       .mutation(async ({ input, ctx }) => {
         const quoteId = nanoid();
-        
-        // Calcul du montant total
-        const totalAmount = input.items.reduce((sum, item) => sum + item.subtotal, 0);
-        
-        // Créer le devis
+
+        const totalAmount = input.items.reduce((acc, it) => acc + (it.subtotal ?? 0), 0);
+
         await db.createQuote({
           id: quoteId,
           userId: ctx.user?.id,
@@ -201,7 +93,6 @@ export const appRouter = router({
           totalAmount,
         });
         
-        // Créer les lignes de devis
         const quoteItemsData = input.items.map(item => ({
           id: nanoid(),
           quoteId,
@@ -209,41 +100,22 @@ export const appRouter = router({
         }));
         
         await db.createQuoteItems(quoteItemsData);
-        
-        return { quoteId };
+        return { id: quoteId };
       }),
-    
-    updateStatus: adminProcedure
-      .input(z.object({
-        id: z.string(),
-        status: z.enum(["pending", "validated", "rejected", "converted"]),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        await db.updateQuoteStatus(input.id, input.status, ctx.user.id);
-        return { success: true };
-      }),
-    
-    updateAdminNotes: adminProcedure
-      .input(z.object({
-        id: z.string(),
-        adminNotes: z.string(),
-      }))
-      .mutation(async ({ input }) => {
-        await db.updateQuoteAdminNotes(input.id, input.adminNotes);
-        return { success: true };
-      }),
+
+    // … autres endpoints (update status, notes, etc.)
   }),
 
   // ========== PRICING CALCULATOR ==========
   pricing: router({
     calculateSalon: publicProcedure
       .input(z.object({
-        mattressLength: z.number().min(1).max(240),
-        mattressCount: z.number().min(1),
-        cornerCount: z.number().min(0),
-        armCount: z.number().min(0).optional(),
-        thicknessMultiplier: z.number().optional(),
-        fabricPricePerMeter: z.number().optional(),
+        mattressLength: z.coerce.number().min(1).max(240),
+        mattressCount: z.coerce.number().min(1),
+        cornerCount: z.coerce.number().min(0),
+        armCount: z.coerce.number().min(0).optional(),
+        thicknessMultiplier: z.coerce.number().optional(),
+        fabricPricePerMeter: z.coerce.number().optional(),
         hasSmallTable: z.boolean().optional(),
         hasBigTable: z.boolean().optional(),
         needsDelivery: z.boolean().optional(),
@@ -255,19 +127,19 @@ export const appRouter = router({
     
     calculateCarpet: publicProcedure
       .input(z.object({
-        length: z.number().min(0.1),
-        width: z.number().min(0.1),
+        length: z.coerce.number().min(0.1),
+        width: z.coerce.number().min(0.1),
         needsDelivery: z.boolean().optional(),
         deliveryLocation: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         return calculateCarpetPrice(input);
       }),
-    
+
     calculateCurtain: publicProcedure
       .input(z.object({
-        length: z.number().min(0.1),
-        width: z.number().min(0.1),
+        length: z.coerce.number().min(0.1),
+        width: z.coerce.number().min(0.1),
         quality: z.enum(["dubai", "quality2", "quality3"]),
         needsDelivery: z.boolean().optional(),
         deliveryLocation: z.string().optional(),
@@ -277,31 +149,12 @@ export const appRouter = router({
       }),
   }),
 
-  // ========== ORDERS ==========
-  orders: router({
-    list: adminProcedure.query(async () => {
-      return await db.getAllOrders();
+  // ========== PRODUCTS ==========
+  products: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllProducts();
     }),
-    
-    getById: protectedProcedure
-      .input(z.object({ id: z.string() }))
-      .query(async ({ input }) => {
-        const order = await db.getOrderById(input.id);
-        if (!order) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Commande non trouvée' });
-        }
-        return order;
-      }),
-    
-    updateStatus: adminProcedure
-      .input(z.object({
-        id: z.string(),
-        status: z.enum(["pending", "confirmed", "in_progress", "completed", "cancelled"]),
-      }))
-      .mutation(async ({ input }) => {
-        await db.updateOrderStatus(input.id, input.status);
-        return { success: true };
-      }),
+    // … le reste inchangé
   }),
 });
 
