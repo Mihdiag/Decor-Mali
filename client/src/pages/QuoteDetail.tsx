@@ -1,75 +1,169 @@
-// === QuoteDetail.tsx (avec répartition par côté) ===
-import { useParams, Link } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
+import { formatPrice } from "@/utils/formatPrice";
 
-export default function QuoteDetail() {
-  const { id } = useParams<{ id: string }>();
-  const { data, isLoading } = trpc.quotes.getById.useQuery({ id: id! });
+interface QuoteDetailProps {
+  quote: {
+    id?: string;
+    date?: string;
+    type: "salon" | "carpet" | "curtain";
+    data: any;
+    result: any;
+  };
+}
 
-  const formatPrice = (a: number) => `${a.toLocaleString("fr-FR")} FCFA`;
+export default function QuoteDetail({ quote }: QuoteDetailProps) {
+  if (!quote) return <p className="text-center py-10">Aucun devis sélectionné.</p>;
 
-  if (isLoading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-
-  if (!data)
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <p className="text-muted-foreground">Devis non trouvé</p>
-        <Link href="/">
-          <Button>Retour</Button>
-        </Link>
-      </div>
-    );
-
-  const { quote, items } = data;
+  const { type, data, result } = quote;
+  const date = quote.date ? new Date(quote.date) : new Date();
 
   return (
-    <div className="container py-8 max-w-4xl">
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Devis #{quote.id.slice(0, 8)}</CardTitle>
-          <CardDescription>Client : {quote.customerName}</CardDescription>
+    <div className="container py-10 max-w-3xl">
+      <Card className="rounded-2xl shadow-lg border">
+        <CardHeader className="border-b pb-4">
+          <CardTitle className="text-xl font-bold flex justify-between items-center">
+            <span>
+              🧾 Devis – {type === "salon" ? "Salon Marocain" : type === "carpet" ? "Tapis" : "Rideaux"}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {format(date, "dd/MM/yyyy")}
+            </span>
+          </CardTitle>
         </CardHeader>
-      </Card>
 
-      {items.map((item) => (
-        <Card key={item.id} className="mb-4">
-          <CardHeader>
-            <CardTitle>{item.productName}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-1">
-            {item.productType === "salon" && (
-              <>
-                <p>Forme : {item.layout}</p>
+        <CardContent className="space-y-6 pt-6">
+          {type === "salon" && (
+            <>
+              <section className="space-y-2">
+                <h3 className="text-lg font-semibold">🛋️ Configuration du Salon</h3>
                 <p>
-                  Côtés : A={item.sideA} m, B={item.sideB} m{" "}
-                  {item.sideC && `, C=${item.sideC} m`}
+                  <strong>Forme :</strong> {data.layout}
                 </p>
-                <p>Matelas : {item.mattressCount} au total</p>
-                {item.perSide && (
+                <p>
+                  <strong>Côté A :</strong> {data.sideA || 0} m |{" "}
+                  <strong>Côté B :</strong> {data.sideB || 0} m{" "}
+                  {data.layout === "U" && (
+                    <>
+                      | <strong>Côté C :</strong> {data.sideC || 0} m
+                    </>
+                  )}
+                </p>
+                <p>
+                  <strong>Longueur du matelas :</strong> {data.mattressLength} cm
+                </p>
+              </section>
+
+              <section className="space-y-2 pt-4 border-t">
+                <h3 className="text-lg font-semibold">📏 Calculs Automatiques</h3>
+                <p>
+                  <strong>Matelas totaux :</strong>{" "}
+                  {result?.suggestion?.mattressCount || 0}
+                </p>
+                <p>
+                  <strong>Coins :</strong> {result?.suggestion?.cornerCount || 0}
+                </p>
+                <p>
+                  <strong>Répartition :</strong>{" "}
+                  Côté A : {result?.suggestion?.perSide?.A || 0} |{" "}
+                  Côté B : {result?.suggestion?.perSide?.B || 0}{" "}
+                  {data.layout === "U" && (
+                    <>| Côté C : {result?.suggestion?.perSide?.C || 0}</>
+                  )}
+                </p>
+              </section>
+
+              <section className="space-y-2 pt-4 border-t">
+                <h3 className="text-lg font-semibold">💰 Détail du Prix</h3>
+                <ul className="space-y-1 text-sm">
+                  {result?.breakdown?.mattresses && (
+                    <li>
+                      Matelas : {formatPrice(result.breakdown.mattresses)}
+                    </li>
+                  )}
+                  {result?.breakdown?.corners && (
+                    <li>
+                      Coins : {formatPrice(result.breakdown.corners)}
+                    </li>
+                  )}
+                  {result?.breakdown?.arms && (
+                    <li>
+                      Bras : {formatPrice(result.breakdown.arms)}
+                    </li>
+                  )}
+                  {result?.breakdown?.smallTable && (
+                    <li>
+                      Petite table : {formatPrice(result.breakdown.smallTable)}
+                    </li>
+                  )}
+                  {result?.breakdown?.bigTable && (
+                    <li>
+                      Grande table : {formatPrice(result.breakdown.bigTable)}
+                    </li>
+                  )}
+                  {result?.breakdown?.transport && (
+                    <li>
+                      Transport : {formatPrice(result.breakdown.transport)}
+                    </li>
+                  )}
+                  {result?.breakdown?.profit && (
+                    <li>
+                      Bénéfice : {formatPrice(result.breakdown.profit)}
+                    </li>
+                  )}
+                </ul>
+
+                <div className="pt-2 border-t mt-2">
                   <p>
-                    Répartition :{" "}
-                    {Object.entries(item.perSide)
-                      .filter(([_, v]) => v > 0)
-                      .map(([k, v]) => `Côté ${k} → ${v}`)
-                      .join(", ")}
+                    <strong>Sous-total :</strong>{" "}
+                    {formatPrice(result.subtotal)}
                   </p>
-                )}
-                <p>Coins : {item.cornerCount}</p>
-              </>
-            )}
-            <p className="pt-2 border-t">Sous-total : {formatPrice(item.subtotal)}</p>
-          </CardContent>
-        </Card>
-      ))}
+                  {result.deliveryFee > 0 && (
+                    <p>
+                      <strong>Livraison :</strong>{" "}
+                      {formatPrice(result.deliveryFee)}
+                    </p>
+                  )}
+                  <p className="text-lg font-bold pt-2">
+                    Total : {formatPrice(result.total)}
+                  </p>
+                </div>
+              </section>
+            </>
+          )}
+
+          {type === "carpet" && (
+            <>
+              <section className="space-y-2">
+                <h3 className="text-lg font-semibold">🧶 Détails du Tapis</h3>
+                <p>
+                  <strong>Dimensions :</strong> {data.length} × {data.width} m
+                </p>
+                <p>
+                  <strong>Prix total :</strong> {formatPrice(result.total)}
+                </p>
+              </section>
+            </>
+          )}
+
+          {type === "curtain" && (
+            <>
+              <section className="space-y-2">
+                <h3 className="text-lg font-semibold">🪟 Détails des Rideaux</h3>
+                <p>
+                  <strong>Dimensions :</strong> {data.length} × {data.width} m
+                </p>
+                <p>
+                  <strong>Qualité :</strong> {data.quality}
+                </p>
+                <p>
+                  <strong>Prix total :</strong> {formatPrice(result.total)}
+                </p>
+              </section>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
