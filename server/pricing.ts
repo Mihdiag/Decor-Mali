@@ -1,6 +1,9 @@
 /**
  * Logique de calcul des prix pour DECOR MALI
+ * Version corrigée et compatible avec le front (QuotePage.tsx)
  */
+
+// === CONSTANTES DE BASE ===
 
 // Prix de base pour un matelas standard de 1m90
 const BASE_MATTRESS_PRICE = 130000; // FCFA
@@ -25,22 +28,24 @@ const PROFIT_PER_SALON = 500000; // FCFA
 // Prix du tapis par mètre carré
 const CARPET_PRICE_PER_SQM = 13000; // FCFA
 
-// Prix des rideaux par mètre carré selon la qualité
+// Prix des rideaux selon la qualité
 const CURTAIN_PRICES = {
   dubai: 6000, // 1ère qualité Dubai
   quality2: 4500, // 2ème qualité
   quality3: 4000, // 3ème qualité
 } as const;
 
+// === TYPES ===
+
 export type CurtainQuality = keyof typeof CURTAIN_PRICES;
 
 export interface SalonPricingInput {
-  mattressLength: number; // en cm
+  mattressLength: number; // cm
   mattressCount: number;
   cornerCount: number;
   armCount?: number;
-  thicknessMultiplier?: number; // en pourcentage (100 = normal, 120 = +20%)
-  fabricPricePerMeter?: number; // Prix additionnel du tissu si différent du défaut
+  thicknessMultiplier?: number; // en pourcentage (100 = normal)
+  fabricPricePerMeter?: number;
   hasSmallTable?: boolean;
   hasBigTable?: boolean;
   needsDelivery?: boolean;
@@ -48,15 +53,15 @@ export interface SalonPricingInput {
 }
 
 export interface CarpetPricingInput {
-  length: number; // en mètres
-  width: number; // en mètres
+  length: number;
+  width: number;
   needsDelivery?: boolean;
   deliveryLocation?: string;
 }
 
 export interface CurtainPricingInput {
-  length: number; // en mètres (hauteur)
-  width: number; // en mètres (largeur)
+  length: number;
+  width: number;
   quality: CurtainQuality;
   needsDelivery?: boolean;
   deliveryLocation?: string;
@@ -78,37 +83,39 @@ export interface PricingResult {
   };
 }
 
+// === OUTILS ===
+
 /**
- * Calcule le prix d'un matelas en fonction de sa longueur
+ * Calcule le prix d’un matelas selon sa longueur et son épaisseur
  */
-export function calculateMattressPrice(length: number, thicknessMultiplier: number = 100): number {
-  if (length > MAX_MATTRESS_LENGTH) {
-    throw new Error(`La longueur du matelas ne peut pas dépasser ${MAX_MATTRESS_LENGTH}cm`);
-  }
-  
-  // Extrapolation linéaire du prix en fonction de la longueur
+export function calculateMattressPrice(
+  length: number,
+  thicknessMultiplier: number = 100
+): number {
+  if (!length || isNaN(length)) length = BASE_MATTRESS_LENGTH;
+  if (length > MAX_MATTRESS_LENGTH)
+    throw new Error(`La longueur du matelas ne peut pas dépasser ${MAX_MATTRESS_LENGTH} cm.`);
+
   const pricePerCm = BASE_MATTRESS_PRICE / BASE_MATTRESS_LENGTH;
   const basePrice = pricePerCm * length;
-  
-  // Application du multiplicateur d'épaisseur
   return Math.round(basePrice * (thicknessMultiplier / 100));
 }
 
 /**
- * Calcule le prix d'un coin (même prix qu'un matelas standard)
+ * Prix d’un coin — équivalent à un matelas standard
  */
 export function calculateCornerPrice(thicknessMultiplier: number = 100): number {
   return calculateMattressPrice(BASE_MATTRESS_LENGTH, thicknessMultiplier);
 }
 
 /**
- * Calcule le prix total d'un salon marocain
+ * Calcule le prix d’un salon marocain complet
  */
 export function calculateSalonPrice(input: SalonPricingInput): PricingResult {
   const {
-    mattressLength,
-    mattressCount,
-    cornerCount,
+    mattressLength = BASE_MATTRESS_LENGTH,
+    mattressCount = 0,
+    cornerCount = 0,
     armCount = DEFAULT_ARM_COUNT,
     thicknessMultiplier = 100,
     fabricPricePerMeter = 0,
@@ -116,39 +123,33 @@ export function calculateSalonPrice(input: SalonPricingInput): PricingResult {
     hasBigTable = false,
     needsDelivery = false,
     deliveryLocation = "",
-  } = input;
+  } = input || {};
 
   const breakdown: PricingResult["breakdown"] = {};
 
-  // Prix des matelas
+  // Matelas
   const mattressPrice = calculateMattressPrice(mattressLength, thicknessMultiplier);
   breakdown.mattresses = mattressPrice * mattressCount;
 
-  // Prix des coins
+  // Coins
   const cornerPrice = calculateCornerPrice(thicknessMultiplier);
   breakdown.corners = cornerPrice * cornerCount;
 
-  // Prix des bras
+  // Bras
   breakdown.arms = ARM_PRICE_EACH * armCount;
 
-  // Prix des tables
-  if (hasSmallTable) {
-    breakdown.smallTable = SMALL_TABLE_PRICE;
-  }
-  if (hasBigTable) {
-    breakdown.bigTable = BIG_TABLE_PRICE;
-  }
+  // Tables
+  if (hasSmallTable) breakdown.smallTable = SMALL_TABLE_PRICE;
+  if (hasBigTable) breakdown.bigTable = BIG_TABLE_PRICE;
 
-  // Transport fixe
+  // Transport et bénéfice fixes
   breakdown.transport = TRANSPORT_FEE;
-
-  // Bénéfice fixe
   breakdown.profit = PROFIT_PER_SALON;
 
-  // Calcul du sous-total
+  // Sous-total
   const subtotal = Object.values(breakdown).reduce((sum, val) => sum + (val || 0), 0);
 
-  // Frais de livraison
+  // Livraison
   let deliveryFee = 0;
   if (needsDelivery && deliveryLocation?.toLowerCase().includes("bamako")) {
     deliveryFee = DELIVERY_FEE_BAMAKO;
@@ -163,28 +164,18 @@ export function calculateSalonPrice(input: SalonPricingInput): PricingResult {
 }
 
 /**
- * Calcule le prix d'un tapis
+ * Calcule le prix d’un tapis
  */
 export function calculateCarpetPrice(input: CarpetPricingInput): PricingResult {
-  const {
-    length,
-    width,
-    needsDelivery = false,
-    deliveryLocation = "",
-  } = input;
-
+  const { length = 0, width = 0, needsDelivery = false, deliveryLocation = "" } = input || {};
   const breakdown: PricingResult["breakdown"] = {};
 
-  // Prix du tapis : longueur x largeur x prix par mètre carré
   breakdown.carpet = Math.round(length * width * CARPET_PRICE_PER_SQM);
-
   const subtotal = breakdown.carpet;
 
-  // Frais de livraison
   let deliveryFee = 0;
-  if (needsDelivery && deliveryLocation?.toLowerCase().includes("bamako")) {
+  if (needsDelivery && deliveryLocation?.toLowerCase().includes("bamako"))
     deliveryFee = DELIVERY_FEE_BAMAKO;
-  }
 
   return {
     subtotal,
@@ -195,30 +186,25 @@ export function calculateCarpetPrice(input: CarpetPricingInput): PricingResult {
 }
 
 /**
- * Calcule le prix d'un rideau
+ * Calcule le prix d’un rideau
  */
 export function calculateCurtainPrice(input: CurtainPricingInput): PricingResult {
   const {
-    length,
-    width,
-    quality,
+    length = 0,
+    width = 0,
+    quality = "dubai",
     needsDelivery = false,
     deliveryLocation = "",
-  } = input;
-
+  } = input || {};
   const breakdown: PricingResult["breakdown"] = {};
 
-  // Prix du rideau : longueur x largeur x prix par mètre carré selon la qualité
   const pricePerSqm = CURTAIN_PRICES[quality];
-  breakdown.carpet = Math.round(length * width * pricePerSqm); // Réutilise le champ carpet pour les rideaux
+  breakdown.carpet = Math.round(length * width * pricePerSqm); // réutilisé pour rideaux
 
   const subtotal = breakdown.carpet;
-
-  // Frais de livraison
   let deliveryFee = 0;
-  if (needsDelivery && deliveryLocation?.toLowerCase().includes("bamako")) {
+  if (needsDelivery && deliveryLocation?.toLowerCase().includes("bamako"))
     deliveryFee = DELIVERY_FEE_BAMAKO;
-  }
 
   return {
     subtotal,
@@ -229,9 +215,8 @@ export function calculateCurtainPrice(input: CurtainPricingInput): PricingResult
 }
 
 /**
- * Formate un montant en FCFA
+ * Formate un prix en FCFA
  */
 export function formatPrice(amount: number): string {
   return `${amount.toLocaleString("fr-FR")} FCFA`;
 }
-
