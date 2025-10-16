@@ -1,33 +1,36 @@
+# =========================
+# Netlify configuration
+# =========================
+
 [build]
-  # Commande de build — installation + compilation
+  # Netlify installe déjà les deps, mais on force PNPM + build
   command = "pnpm install --no-frozen-lockfile && pnpm run build"
-  
-  # Dossier de sortie du build
-  publish = "dist/public"
-  
-  # Fonctions serverless Netlify
-  functions = "netlify/functions"
+  # Dossier de sortie du bundler (Vite/React = "dist")
+  publish = "dist"
 
 [build.environment]
-  # Version de Node.js
-  NODE_VERSION = "22.13.0"
+  # Choisis un LTS largement supporté par Netlify Functions
+  NODE_VERSION = "20.18.0"
+  NODE_ENV     = "production"
+  PNPM_FLAGS   = "--no-frozen-lockfile"
 
-  # Environnement de build
-  NODE_ENV = "production"
-
-  # Empêche l'échec du build si le lockfile n'est pas strictement à jour
-  PNPM_FLAGS = "--no-frozen-lockfile"
-
-# Redirection API vers fonctions serverless
+# IMPORTANT : redirections spécifiques AVANT le fallback SPA
+# 1) tRPC → Function "api" (awsLambdaRequestHandler) 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/server/:splat"
+  from = "/trpc/*"
+  to   = "/.netlify/functions/api/trpc/:splat"
   status = 200
 
-# Redirection SPA (Single Page Application)
+# 2) (optionnel) API REST → Function "api" si tu en as besoin
+[[redirects]]
+  from = "/api/*"
+  to   = "/.netlify/functions/api/:splat"
+  status = 200
+
+# 3) Fallback SPA (doit rester EN DERNIER)
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to   = "/index.html"
   status = 200
 
 # Headers de sécurité
@@ -45,8 +48,10 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Configuration des fonctions serverless
+# Fonctions serverless
 [functions]
+  directory = "netlify/functions"    # <-- dossier des Functions
   node_bundler = "esbuild"
+  # Garde ces modules externes si tu en dépends (sinon tu peux les retirer)
   external_node_modules = ["express", "mysql2"]
   included_files = ["drizzle/**"]
