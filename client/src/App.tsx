@@ -9,6 +9,10 @@ import QuotePage from "./pages/QuotePage";
 import QuoteDetail from "./pages/QuoteDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 
+// ---- tRPC + React Query (ajout) ----
+import { trpc, trpcClientOptions } from "@/lib/trpc";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -30,6 +34,10 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  // ---- tRPC + React Query (ajout) ----
+  const queryClient = new QueryClient();
+  const client = trpc.createClient(trpcClientOptions);
+
   return (
     <ErrorBoundary>
       <ThemeProvider
@@ -38,7 +46,12 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <Router />
+          {/* Providers tRPC + React Query (obligatoire pour les hooks tRPC) */}
+          <trpc.Provider client={client} queryClient={queryClient}>
+            <QueryClientProvider client={queryClient}>
+              <Router />
+            </QueryClientProvider>
+          </trpc.Provider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
