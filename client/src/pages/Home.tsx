@@ -36,7 +36,6 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-secondary/30 via-background to-accent/20 py-24 overflow-hidden">
-        {/* Motif décoratif oriental */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-10 right-10 w-64 h-64 border-4 border-primary rounded-full" />
           <div className="absolute bottom-10 left-10 w-48 h-48 border-4 border-accent rounded-full" />
@@ -119,106 +118,11 @@ export default function Home() {
               <CardContent>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li>• Calcul automatique</li>
-                  <li>• Prix transparents</li>
                   <li>• Validation par expert</li>
                   <li>• Visite sur place incluse</li>
                 </ul>
               </CardContent>
             </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Info Section */}
-      <section className="relative bg-gradient-to-br from-accent/10 via-secondary/20 to-primary/10 py-20">
-        <div className="absolute inset-0 opacity-5">
-          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <pattern id="moroccan-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="1"/>
-              <circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" strokeWidth="1"/>
-            </pattern>
-            <rect width="100%" height="100%" fill="url(#moroccan-pattern)" />
-          </svg>
-        </div>
-        <div className="container">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12">Nos Tarifs</h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Salons Marocains</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Matelas standard (1m90)</span>
-                    <span className="font-semibold">130 000 FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Coin (1m x 1m)</span>
-                    <span className="font-semibold">130 000 FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bras (paire)</span>
-                    <span className="font-semibold">96 000 FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Petite table</span>
-                    <span className="font-semibold">50 000 FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Grande table</span>
-                    <span className="font-semibold">130 000 FCFA</span>
-                  </div>
-                  <div className="pt-3 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      * Tissu par défaut : Moutarras | Épaisseur : 30cm
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tapis & Livraison</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tapis (par m²)</span>
-                    <span className="font-semibold">13 000 FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Rideaux 1ère qualité</span>
-                    <span className="font-semibold">6 000 FCFA/m²</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Rideaux 2ème qualité</span>
-                    <span className="font-semibold">4 500 FCFA/m²</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Rideaux 3ème qualité</span>
-                    <span className="font-semibold">4 000 FCFA/m²</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Livraison Bamako</span>
-                    <span className="font-semibold">75 000 FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Transport salon</span>
-                    <span className="font-semibold">Inclus</span>
-                  </div>
-                  <div className="pt-3 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      Exemple : Tapis 5m x 4m = 5 × 4 × 13 000 = 260 000 FCFA
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            <div className="text-center mt-8">
-              <Link href="/quote">
-                <Button size="lg">Calculer mon devis personnalisé</Button>
-              </Link>
-            </div>
           </div>
         </div>
       </section>
@@ -262,4 +166,3 @@ export default function Home() {
     </div>
   );
 }
-
