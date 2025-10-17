@@ -3,31 +3,30 @@
 # =========================
 
 [build]
-  # Netlify installe déjà les deps, mais on force PNPM + build
+  # Netlify installe déjà les deps; on force PNPM + build
   command = "pnpm install --no-frozen-lockfile && pnpm run build"
-  # Dossier de sortie du bundler (Vite/React = "dist")
+  # Vite publie dans "dist"
   publish = "dist"
 
 [build.environment]
-  # Choisis un LTS largement supporté par Netlify Functions
-  NODE_VERSION = "20.18.0"
+  # Vite 7 : Node 20.19+ ou 22.12+ -> on choisit 22.13.0
+  NODE_VERSION = "22.13.0"
   NODE_ENV     = "production"
   PNPM_FLAGS   = "--no-frozen-lockfile"
 
-# IMPORTANT : redirections spécifiques AVANT le fallback SPA
-# 1) tRPC → Function "api" (awsLambdaRequestHandler) 
+# Redirections : /trpc vers la Function "api" AVANT le fallback SPA
 [[redirects]]
   from = "/trpc/*"
   to   = "/.netlify/functions/api/trpc/:splat"
   status = 200
 
-# 2) (optionnel) API REST → Function "api" si tu en as besoin
+# (Optionnel) si tu utilises encore /api/*
 [[redirects]]
   from = "/api/*"
-  to   = "/.netlify/functions/api/:splat"
+  to   = "/.netlify/functions/server/:splat"
   status = 200
 
-# 3) Fallback SPA (doit rester EN DERNIER)
+# Fallback SPA (doit rester en dernier)
 [[redirects]]
   from = "/*"
   to   = "/index.html"
@@ -50,8 +49,7 @@
 
 # Fonctions serverless
 [functions]
-  directory = "netlify/functions"    # <-- dossier des Functions
+  directory = "netlify/functions"
   node_bundler = "esbuild"
-  # Garde ces modules externes si tu en dépends (sinon tu peux les retirer)
   external_node_modules = ["express", "mysql2"]
   included_files = ["drizzle/**"]
