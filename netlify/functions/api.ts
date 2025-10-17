@@ -1,16 +1,11 @@
 // netlify/functions/api.ts
 import { awsLambdaRequestHandler } from "@trpc/server/adapters/aws-lambda";
-import { appRouter } from "../../src/server/routers";               // adapte le chemin si besoin
-import type { TrpcContext } from "../../src/server/_core/context";   // adapte le chemin
-import { createContext } from "../../src/server/_core/context";      // si tu as déjà createContext
+import { appRouter } from "../../server/routers"; // <— CHEMIN CORRIGÉ
 
-// Si tu n'as pas de createContext exporté, décommente ce fallback minimal :
-// const createContext = async (): Promise<TrpcContext> => ({ user: null } as any);
+// Contexte minimal : suffisant pour les procédures publiques (pricing, quotes.create)
+type Ctx = { user?: { id: string; role: "admin" | "user" } | null };
 
 export const handler = awsLambdaRequestHandler({
   router: appRouter,
-  createContext: async (event, context): Promise<TrpcContext> => {
-    // Passe tout ce dont ton createContext a besoin (headers, cookies...)
-    return createContext({ event, context, headers: event.headers as any } as any);
-  },
+  createContext: async (): Promise<Ctx> => ({ user: null }),
 });
