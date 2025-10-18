@@ -1,10 +1,12 @@
-import { defineConfig } from "vitest/config";
-import path from "path";
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  root: path.resolve(import.meta.dirname),
-  test: {
-    environment: "node",
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+  base: "/",                // important pour Netlify
+  plugins: [react()],
+  build: {
+    outDir: "dist",         // <-- dossier de sortie unique
+    emptyOutDir: true,
   },
 });
